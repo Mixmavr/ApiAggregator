@@ -116,30 +116,12 @@ The `appsettings.json` file should include the following:
 
 ## Usage
 
-### 1. Swagger UI
+###  Swagger UI
 - **Access:** Navigate to `/swagger` after running the service.
 - **Features:**
   - Test endpoints interactively.
   - View input parameters and response schemas.
 
-### 2. CURL Examples
-
-#### Fetch Weather Data
-```bash
-curl -X GET "http://localhost:5000/api/weather?city=Athens"
-```
-
-#### Fetch News Articles
-```bash
-curl -X GET "http://localhost:5000/api/news?keyword=technology"
-```
-
-#### Fetch GitHub Repositories
-```bash
-curl -X GET "http://localhost:5000/api/github?username=octocat"
-```
-
----
 
 ## Testing & Maintenance
 
