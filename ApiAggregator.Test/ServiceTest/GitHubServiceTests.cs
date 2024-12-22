@@ -45,7 +45,7 @@ public class GitHubServiceTests
 
         var gitHubService = new GitHubService(configMock.Object, cache, mockRestClientWrapper.Object);
 
-        var result = await gitHubService.GetOwnerReposAsync(username);
+        var result = await gitHubService.GetReposAsync(username);
 
         Assert.NotNull(result);
         Assert.Single(result);
