@@ -129,16 +129,5 @@ The `appsettings.json` file should include the following:
 - **Path:** `ApiAggregator.Test`
 - **Tools:** xUnit for unit testing services and controllers.
 
-### Logs
-- **Purpose:** Tracks API failures and fallback activations.
-- **Location:** Console logs (can be extended to file-based or cloud logging).
-
----
-
-## Contributors
-- Mixmavr
-- Team API Aggregator
-
----
 
 For more details, visit the [repository](https://github.com/Mixmavr/API-Aggregator).
