@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "i1ay/QWaRduauo2x7RebAGh4uCafJGaVI3CCGGXv95Y=",
+  "Source": "ApiAggregator",
+  "BasePath": "_content/ApiAggregator",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}
