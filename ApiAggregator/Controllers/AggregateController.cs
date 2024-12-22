@@ -17,7 +17,6 @@ public class AggregateController : ControllerBase
     }
 
 
-    // Endpoint για να συνδυάζει δεδομένα από τα 3 APIs
     [HttpGet]
     public async Task<IActionResult> GetAggregateData([FromQuery] string city="Athens", [FromQuery] string keyword = "General", [FromQuery] string owner = "Mixmavr")
     {
@@ -25,7 +24,7 @@ public class AggregateController : ControllerBase
         {
             var weatherTask = _weatherService.GetWeatherAsync(city);
             var newsTask = _newsService.GetNewsAsync(keyword);
-            var reposTask = _githubService.GetOwnerReposAsync(owner);
+            var reposTask = _githubService.GetReposAsync(owner);
 
             await Task.WhenAll(weatherTask, newsTask, reposTask);
 

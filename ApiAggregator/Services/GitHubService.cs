@@ -29,7 +29,7 @@ public class GitHubService
         }
     }
 
-    public async Task<List<RepositoryModel>> GetOwnerReposAsync(string username)
+    public async Task<List<RepositoryModel>> GetReposAsync(string username)
     {
         username = string.IsNullOrWhiteSpace(username) ? "Mixmavr" : username.Trim().ToLower();
         string cacheKey = $"GitHubReposCache_{username}";
@@ -41,24 +41,12 @@ public class GitHubService
 
         try
         {
-            var request = new RestRequest($"/users/{username}/repos", Method.Get);
-            request.AddHeader("Authorization", $"Bearer {_accessToken}");
-
-            var response = await _restClientWrapper.ExecuteAsync(request);
-
-            if (response.StatusCode != HttpStatusCode.OK || string.IsNullOrEmpty(response.Content))
-            {
-                throw new HttpRequestException($"Failed to fetch repositories: {response.StatusCode} - {response.Content}");
-            }
-
-            var repositories = JsonSerializer.Deserialize<List<RepositoryModel>>(response.Content, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
+            var repositories = await FetchRepositoriesAsync(username);
 
             if (repositories == null || !repositories.Any())
             {
-                throw new JsonException("No repositories found or invalid JSON structure.");
+                Console.WriteLine($"No repositories found for username: {username}. Returning static fallback data.");
+                return GetStaticFallbackRepositories(username);
             }
 
             _cache.Set(cacheKey, repositories, TimeSpan.FromMinutes(60));
@@ -67,10 +55,51 @@ public class GitHubService
         }
         catch (Exception ex)
         {
-            throw new Exception($"Unable to fetch repositories and no cached data available: {ex.Message}");
+            Console.WriteLine($"Error fetching repositories for username: {username}. {ex.Message}. Returning static fallback data.");
+            return GetStaticFallbackRepositories(username);
         }
     }
 
+    private async Task<List<RepositoryModel>> FetchRepositoriesAsync(string username)
+    {
+        try
+        {
+            var request = new RestRequest($"/users/{username}/repos", Method.Get);
+            request.AddHeader("Authorization", $"Bearer {_accessToken}");
 
+            var response = await _restClientWrapper.ExecuteAsync(request);
 
+            if (response.StatusCode != HttpStatusCode.OK || string.IsNullOrEmpty(response.Content))
+            {
+                Console.WriteLine($"Failed to fetch repositories for username: {username}. Status: {response?.StatusCode}");
+                return null;
+            }
+
+            return JsonSerializer.Deserialize<List<RepositoryModel>>(response.Content, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching repositories for username: {username}. {ex.Message}");
+            return null;
+        }
+    }
+
+    private List<RepositoryModel> GetStaticFallbackRepositories(string username)
+    {
+        return new List<RepositoryModel>
+        {
+            new RepositoryModel
+            {
+                Name = "No repositories available",
+                Description = "We are unable to fetch repositories at this time. Please try again later.",
+                Owner = new Owner
+                {
+                    Url = string.Empty
+                }
+            }
+        };
+    }
 }

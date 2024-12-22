@@ -44,22 +44,12 @@ namespace ApiAggregator.Services
 
             try
             {
-                var request = new RestRequest($"{_baseUrl}/everything?q={keyword}&apiKey={_apiKey}&sortBy=publishedAt&pageSize=10", Method.Get);
-                var response = await _restClientWrapper.ExecuteAsync(request);
-
-                if (response.StatusCode != HttpStatusCode.OK || string.IsNullOrEmpty(response.Content))
-                {
-                    throw new HttpRequestException($"Failed to fetch news: {response.StatusCode} - {response.Content}");
-                }
-
-                var newsData = JsonSerializer.Deserialize<NewsModel>(response.Content, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
+                var newsData = await FetchNewsDataAsync(keyword);
 
                 if (newsData == null || newsData.Articles == null || !newsData.Articles.Any())
                 {
-                    throw new JsonException("No news articles found or invalid JSON structure.");
+                    Console.WriteLine($"No valid data for keyword: {keyword}. Falling back to 'general'.");
+                    return GetStaticFallbackArticles();
                 }
 
                 _cache.Set(cacheKey, newsData.Articles, TimeSpan.FromMinutes(10));
@@ -68,9 +58,47 @@ namespace ApiAggregator.Services
             }
             catch (Exception ex)
             {
-                throw new Exception($"Unable to fetch news and no cached data available: {ex.Message}");
+                Console.WriteLine($"Error fetching news for keyword: {keyword}. {ex.Message}");
+                return GetStaticFallbackArticles();
             }
         }
 
+        private async Task<NewsModel> FetchNewsDataAsync(string keyword)
+        {
+            try
+            {
+                var request = new RestRequest($"{_baseUrl}/everything?q={keyword}&apiKey={_apiKey}&sortBy=publishedAt&pageSize=10", Method.Get);
+                var response = await _restClientWrapper.ExecuteAsync(request);
+
+                if (response.StatusCode != HttpStatusCode.OK || string.IsNullOrEmpty(response.Content))
+                {
+                    Console.WriteLine($"Failed to fetch news for keyword: {keyword}. Status: {response?.StatusCode}");
+                    return null;
+                }
+
+                return JsonSerializer.Deserialize<NewsModel>(response.Content, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error fetching news for keyword: {keyword}. {ex.Message}");
+                return null;
+            }
+        }
+
+        private List<Article> GetStaticFallbackArticles()
+        {
+            return new List<Article>
+            {
+                new Article
+                {
+                    Title = "No news available",
+                    Description = "We are unable to fetch news at this time. Please try again later.",
+                    Url = string.Empty
+                }
+            };
+        }
     }
 }

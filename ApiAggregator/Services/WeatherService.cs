@@ -18,7 +18,7 @@
             IConfiguration configuration,
             IMemoryCache cache,
             IRestClientWrapper restClientWrapper
-            )
+        )
         {
             _baseUrl = configuration["OpenWeatherMap:BaseUrl"];
             _apiKey = configuration["OpenWeatherMap:ApiKey"];
@@ -48,33 +48,62 @@
 
             try
             {
-                var request = new RestRequest($"{_baseUrl}/weather?q={city}&appid={_apiKey}&units=metric", Method.Get);
-
-                var response = await _restClientWrapper.ExecuteAsync(request);
-
-                if (response == null || response.StatusCode != HttpStatusCode.OK || string.IsNullOrEmpty(response.Content))
-                {
-                    throw new HttpRequestException($"Failed to fetch weather: {response?.StatusCode} - {response?.Content}");
-                }
-
-                var weatherData = JsonSerializer.Deserialize<WeatherModel>(response.Content, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
+                var weatherData = await FetchWeatherDataAsync(city);
 
                 if (weatherData == null)
                 {
-                    throw new JsonException("Invalid weather data received.");
+                    Debug.WriteLine($"No valid weather data for city: {city}. Returning fallback weather data.");
+                    return GetStaticFallbackWeather(city);
                 }
-
                 _cache.Set(cacheKey, weatherData, TimeSpan.FromMinutes(30));
-
                 return weatherData;
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error fetching weather data: {ex.Message}");
+                Debug.WriteLine($"Error fetching weather data for city: {city}. {ex.Message}. Returning fallback weather data.");
+                return GetStaticFallbackWeather(city);
             }
+        }
+
+        private async Task<WeatherModel> FetchWeatherDataAsync(string city)
+        {
+            try
+            {
+                var request = new RestRequest($"{_baseUrl}/weather?q={city}&appid={_apiKey}&units=metric", Method.Get);
+                var response = await _restClientWrapper.ExecuteAsync(request);
+
+                if (response == null || response.StatusCode != HttpStatusCode.OK || string.IsNullOrEmpty(response.Content))
+                {
+                    Debug.WriteLine($"Failed to fetch weather for city: {city}. Status: {response?.StatusCode}");
+                    return null;
+                }
+
+                return JsonSerializer.Deserialize<WeatherModel>(response.Content, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error fetching weather data for city: {city}. {ex.Message}");
+                return null;
+            }
+        }
+
+        private WeatherModel GetStaticFallbackWeather(string city)
+        {
+            return new WeatherModel
+            {
+                Name = "Something went wrong",
+                Main = new MainWeather
+                {
+                    Temp = 20.0, 
+                    Feels_Like = 20.0, 
+                    Pressure = 1013,
+                    Humidity = 50
+                }
+                
+            };
         }
     }
 }
